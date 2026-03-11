@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深渊调查局 | Bureau of Deep Abyss</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'cinzel': ['Cinzel', 'serif'],
+                        'noto': ['"Noto Serif SC"', 'serif'],
+                    },
+                    colors: {
+                        eldritch: {
+                            900: '#0a0514',
+                            800: '#140b2e',
+                            purple: '#6d28d9',
+                            cyan: '#0d9488',
+                            gold: '#b45309',
+                            parchment: '#fef3c7'
+                        }
+                    },
+                    animation: {
+                        'mist': 'mistMove 20s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        mistMove: {
+                            '0%': { backgroundPosition: '0% 0%' },
+                            '100%': { backgroundPosition: '100% 100%' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0514;
+            color: #e5e7eb;
+            font-family: 'Noto Serif SC', serif;
+            overflow-x: hidden;
+        }
+        
+        /* 动态迷雾背景 */
+        .bg-mist {
+            background-image: radial-gradient(circle at 50% 50%, rgba(109, 40, 217, 0.15) 0%, rgba(10, 5, 20, 1) 70%),
+                              url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
+        }
+
+        /* 羊皮纸卡片质感 */
+        .parchment-card {
+            background: linear-gradient(135deg, rgba(30,30,40,0.9) 0%, rgba(15,15,20,0.95) 100%);
+            border: 1px solid rgba(180, 83, 9, 0.3);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(109, 40, 217, 0.1);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        
+        .parchment-card:hover {
+            border-color: rgba(109, 40, 217, 0.8);
+            box-shadow: 0 4px 30px rgba(109, 40, 217, 0.2), inset 0 0 20px rgba(109, 40, 217, 0.2);
+            transform: translateY(-5px);
+        }
+
+        /* 几何描边装饰 */
+        .geo-border {
+            position: relative;
+        }
+        .geo-border::before, .geo-border::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border: 1px solid #0d9488;
+            transition: all 0.3s ease;
+        }
+        .geo-border::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+        .geo-border::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+        
+        .geo-border:hover::before, .geo-border:hover::after {
+            width: 100%;
+            height: 100%;
+            opacity: 0.2;
+        }
+
+        /* 渐现动画类 */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 按钮发光效果 */
+        .btn-glow {
+            position: relative;
+            z-index: 1;
+        }
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(45deg, #6d28d9, #0d9488, #6d28d9);
+            z-index: -1;
+            filter: blur(15px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .btn-glow:hover::before {
+            opacity: 0.7;
+            animation: pulse-slow 2s infinite;
+        }
+
+        /* 终端打字机游标 */
+        .cursor-blink::after {
+            content: '█';
+            animation: blink 1s step-start infinite;
+            color: #0d9488;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-eldritch-purple selection:text-white">
+
+    <!-- 导航栏 -->
+    <nav class="fixed w-full z-50 transition-all duration-300 bg-eldritch-900/80 backdrop-blur-md border-b border-white/5" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-eye text-eldritch-purple text-2xl animate-pulse"></i>
+                    <span class="font-cinzel font-bold text-xl tracking-widest text-eldritch-parchment">B.D.A.</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#about" class="text-sm font-bold tracking-widest text-gray-300 hover:text-eldritch-cyan transition-colors">核心机制</a>
+                    <a href="#lore" class="text-sm font-bold tracking-widest text-gray-300 hover:text-eldritch-cyan transition-colors">调查档案</a>
+                    <a href="#characters" class="text-sm font-bold tracking-widest text-gray-300 hover:text-eldritch-cyan transition-colors">深渊图鉴</a>
+                    <a href="#terminal" class="text-sm font-bold tracking-widest text-gray-300 hover:text-eldritch-purple transition-colors flex items-center gap-1"><i class="fa-solid fa-microchip"></i> 评估终端</a>
+                </div>
+                <div>
+                    <a href="https://6w5cn68s.mule.page" target="_blank" class="geo-border px-6 py-2 bg-eldritch-800 text-eldritch-parchment font-cinzel text-sm tracking-widest border border-eldritch-purple/50 hover:bg-eldritch-purple/20 transition-all">
+                        开始调查
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄首屏 (Hero Section) -->
+    <section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden bg-mist">
+        <!-- 装饰性几何背景元素 -->
+        <div class="absolute inset-0 z-0 opacity-20 flex items-center justify-center pointer-events-none">
+            <div class="w-[600px] h-[600px] border-[0.5px] border-eldritch-purple/30 rounded-full animate-[spin_60s_linear_infinite]"></div>
+            <div class="absolute w-[400px] h-[400px] border-[0.5px] border-eldritch-cyan/20 rotate-45 animate-[spin_40s_linear_infinite_reverse]"></div>
+        </div>
+
+        <div class="relative z-10 text-center px-4 max-w-4xl mx-auto mt-10">
+            <h2 class="font-cinzel text-eldritch-purple text-lg md:text-xl tracking-[0.3em] mb-4 animate-fade-in uppercase">Bureau of Deep Abyss</h2>
+            <h1 class="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-eldritch-parchment via-white to-gray-400 mb-6 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] tracking-wider">
+                深渊调查局
+            </h1>
+            <div class="w-24 h-[1px] bg-gradient-to-r from-transparent via-eldritch-purple to-transparent mx-auto mb-8"></div>
+            <p class="text-lg md:text-xl text-gray-400 mb-10 leading-relaxed font-light tracking-wide max-w-2xl mx-auto">
+                西装革履之下，是不可名状的疯狂。<br>
+                2D横版肉鸽地牢 × 搜打撤机制 × 西式克苏鲁美学
+            </p>
+            <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                <a href="https://6w5cn68s.mule.page" target="_blank" class="btn-glow group relative px-10 py-4 bg-eldritch-900 border border-eldritch-purple text-eldritch-parchment font-bold text-lg tracking-widest overflow-hidden">
+                    <span class="relative z-10 flex items-center gap-3">
+                        潜入深渊 <i class="fa-solid fa-arrow-right-to-bracket group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                    <div class="absolute inset-0 bg-eldritch-purple/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                </a>
+                <a href="#about" class="px-10 py-4 text-gray-400 font-bold tracking-widest hover:text-white transition-colors border-b border-transparent hover:border-gray-500">
+                    查阅机密档案
+                </a>
+            </div>
+        </div>
+
+        <!-- 滚动提示 -->
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
+            <a href="#about" class="text-gray-500 hover:text-eldritch-purple transition-colors">
+                <i class="fa-solid fa-chevron-down text-2xl"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- 核心机制 (Features) -->
+    <section id="about" class="py-24 relative z-10 bg-eldritch-900 border-t border-eldritch-purple/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-in-up">
+                <h2 class="font-cinzel text-3xl md:text-4xl text-eldritch-parchment mb-4 tracking-widest">Core Mechanisms</h2>
+                <div class="w-16 h-1 bg-eldritch-cyan mx-auto"></div>
+                <p class="mt-6 text-gray-400 tracking-wider">在无限轮回中，每一次下潜都是与贪婪的博弈。</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="parchment-card p-8 rounded-sm fade-in-up" style="transition-delay: 100ms;">
+                    <div class="w-14 h-14 bg-eldritch-800 border border-eldritch-gold/30 rounded-full flex items-center justify-center mb-6 text-eldritch-gold text-2xl">
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 tracking-wider">搜打撤博弈</h3>
+                    <p class="text-gray-400 leading-relaxed text-sm">
+                        搜刮古神遗物，寻找撤离仪式阵。成功撤离带出所有资源；若在深渊中死亡，所有未固化的资产将彻底遗失。克制你的贪婪，是生存的第一法则。
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="parchment-card p-8 rounded-sm fade-in-up" style="transition-delay: 200ms;">
+                    <div class="w-14 h-14 bg-eldritch-800 border border-eldritch-purple/50 rounded-full flex items-center justify-center mb-6 text-eldritch-purple text-2xl shadow-[0_0_15px_rgba(109,40,217,0.4)]">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 tracking-wider">理智值系统 (Sanity)</h3>
+                    <p class="text-gray-400 leading-relaxed text-sm">
+                        黑暗会侵蚀你的心智。遭遇不可名状之物或阅读禁忌文献，将导致理智值快速衰减。理智崩溃时，你带出的战利品将扭曲为无用的废料。
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="parchment-card p-8 rounded-sm fade-in-up" style="transition-delay: 300ms;">
+                    <div class="w-14 h-14 bg-eldritch-800 border border-eldritch-cyan/50 rounded-full flex items-center justify-center mb-6 text-eldritch-cyan text-2xl">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 tracking-wider">知识锁叙事</h3>
+                    <p class="text-gray-400 leading-relaxed text-sm">
+                        抛弃传统的物理钥匙。你在上一次轮回中拼凑出的“古神真名”与“仪式密码”，才是开启下一层深渊隐藏大门的唯一方法。信息，即是力量。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 深渊终端 (Gemini API 驱动的理智评估) -->
+    <section id="terminal" class="py-24 relative overflow-hidden bg-[#05020a] border-t border-eldritch-purple/10">
+        <!-- 终端背景网格 -->
+        <div class="absolute inset-0 opacity-[0.03]" style="background-image: linear-gradient(#0d9488 1px, transparent 1px), linear-gradient(90deg, #0d9488 1px, transparent 1px); background-size: 20px 20px;"></div>
+        
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 fade-in-up">
+            <div class="text-center mb-12">
+                <h2 class="font-cinzel text-3xl md:text-4xl text-eldritch-cyan mb-4 tracking-widest flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-server text-2xl"></i> Abyssal Terminal
+                </h2>
+                <div class="w-16 h-1 bg-eldritch-cyan mx-auto"></div>
+                <p class="mt-6 text-gray-400 tracking-wider">上传你的深渊目击报告，中央主脑将评估你的理智污染程度。</p>
+            </div>
+
+            <!-- 终端交互面板 -->
+            <div class="bg-black/80 border border-eldritch-cyan/30 rounded-lg p-6 md:p-10 shadow-[0_0_30px_rgba(13,148,136,0.1)] relative">
+                <!-- 装饰性灯标 -->
+                <div class="absolute top-4 right-4 flex gap-2">
+                    <div class="w-2 h-2 rounded-full bg-eldritch-cyan animate-pulse"></div>
+                    <div class="w-2 h-2 rounded-full bg-eldritch-purple"></div>
+                    <div class="w-2 h-2 rounded-full bg-red-900" id="terminal-alert-light"></div>
+                </div>
+
+                <div class="mb-6">
+                    <label for="sighting-input" class="block text-eldritch-cyan font-cinzel text-sm tracking-widest mb-2">> INPUT_SIGHTING_REPORT:</label>
+                    <textarea id="sighting-input" rows="3" class="w-full bg-[#0a0a0f] border border-eldritch-cyan/20 rounded p-4 text-gray-300 focus:outline-none focus:border-eldritch-cyan focus:ring-1 focus:ring-eldritch-cyan transition-all font-mono resize-none placeholder-gray-700" placeholder="描述你在深渊中看到了什么？例如：一个穿着西装的男人，但他的头是一团扭曲的紫色星云..."></textarea>
+                </div>
+
+                <div class="flex justify-end mb-8">
+                    <button id="analyze-btn" class="geo-border px-6 py-3 bg-eldritch-cyan/10 text-eldritch-cyan font-bold tracking-widest border border-eldritch-cyan hover:bg-eldritch-cyan hover:text-black transition-all flex items-center gap-2">
+                        提交评估报告 ✨
+                    </button>
+                </div>
+
+                <!-- 输出结果区域 -->
+                <div class="relative">
+                    <label class="block text-eldritch-purple font-cinzel text-sm tracking-widest mb-2">> SYSTEM_RESPONSE:</label>
+                    <div class="bg-[#05020a] border border-eldritch-purple/30 p-6 min-h-[150px] font-mono text-sm leading-relaxed text-gray-400 relative overflow-hidden" id="output-container">
+                        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-50 pointer-events-none"></div>
+                        <div id="output-text" class="relative z-10 whitespace-pre-wrap"><span class="text-gray-600">等待神经链路接入...</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 relative bg-[#0a0514] border-t border-eldritch-purple/20">
+        <div class="max-w-4xl mx-auto px-4 text-center fade-in-up">
+            <h2 class="text-3xl md:text-5xl font-bold text-white mb-6 tracking-wider">深渊的门扉已经开启</h2>
+            <p class="text-gray-400 mb-10 text-lg">你，准备好面对自己的疯狂了吗？</p>
+            <a href="https://6w5cn68s.mule.page" target="_blank" class="inline-block btn-glow geo-border px-12 py-5 bg-eldritch-900 text-eldritch-parchment font-cinzel font-bold text-xl tracking-[0.2em] border border-eldritch-cyan hover:bg-eldritch-cyan/20 transition-all shadow-[0_0_20px_rgba(13,148,136,0.3)] hover:shadow-[0_0_40px_rgba(13,148,136,0.6)]">
+                PLAY NOW
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black py-10 border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-eye text-eldritch-purple"></i>
+                <span class="font-cinzel font-bold text-gray-500 tracking-widest">BUREAU OF DEEP ABYSS</span>
+            </div>
+            <p class="text-gray-600 text-sm">© 2026 深渊调查局开发团队. All rights reserved.</p>
+            <div class="flex gap-4 text-gray-600">
+                <a href="#" class="hover:text-eldritch-cyan transition-colors"><i class="fa-brands fa-discord text-xl"></i></a>
+                <a href="#" class="hover:text-eldritch-cyan transition-colors"><i class="fa-brands fa-x-twitter text-xl"></i></a>
+                <a href="#" class="hover:text-eldritch-cyan transition-colors"><i class="fa-brands fa-steam text-xl"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Gemini API 逻辑 & 简单的动画监控脚本 -->
+    <script>
+        // --- Gemini API 集成逻辑 ---
+        const apiKey = ""; // 执行环境会在运行时自动注入
+        
+        // 指数退避重试函数
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            let retries = 0;
+            const delays = [1000, 2000, 4000, 8000, 16000];
+
+            while (retries < maxRetries) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    if (retries === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delays[retries]));
+                    retries++;
+                }
+            }
+        }
+
+        async function analyzeSighting() {
+            const inputEl = document.getElementById('sighting-input');
+            const outputEl = document.getElementById('output-text');
+            const btnEl = document.getElementById('analyze-btn');
+            const alertLight = document.getElementById('terminal-alert-light');
+            
+            const userSighting = inputEl.value.trim();
+            if (!userSighting) {
+                outputEl.innerHTML = '<span class="text-red-500">错误：未检测到输入信号。请描述目击事件。</span>';
+                return;
+            }
+
+            // 更新 UI 状态
+            inputEl.disabled = true;
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 解析中...';
+            outputEl.innerHTML = '<span class="text-eldritch-cyan cursor-blink">正在连接深渊主脑，解析神经污染图谱...</span>';
+            alertLight.classList.add('bg-red-500', 'animate-pulse');
+            alertLight.classList.remove('bg-red-900');
+
+            // 系统指令：定制为深渊调查局的冷酷评估系统
+            const systemPrompt = `你现在是“深渊调查局”的自动化理智评估主脑（B.D.A. Terminal）。
+            玩家会输入他们在深渊中目击到的诡异事物。你需要以极其冰冷、官僚、充满新怪谈和克苏鲁风格的语气回复。
+            
+            你的回复必须包含以下两部分格式：
+            [系统判定]
+            理智值扣除幅度：(自行判断，格式如 Sanity -15，遇到极度恐怖的描述可扣除更多)
+            污染等级：(低/中/高/极度危险)
+
+            [机密档案记录]
+            (用50-100字生成一段冷酷的机密档案报告。解释该实体可能属于什么古神眷族，并给出对该调查员的处置建议。例如：“建议立即执行记忆清除”、“该干员已发生不可逆变异，派遣肃清小队”等。)
+            
+            切记：不要说“你好”、“我是AI”之类的话，直接输出报告。`;
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: userSighting }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                const data = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (generatedText) {
+                    // 简单的打字机效果展示结果
+                    outputEl.innerHTML = '';
+                    let i = 0;
+                    const typeWriter = setInterval(() => {
+                        outputEl.textContent += generatedText.charAt(i);
+                        outputEl.classList.add('cursor-blink');
+                        i++;
+                        if (i >= generatedText.length) {
+                            clearInterval(typeWriter);
+                            outputEl.classList.remove('cursor-blink');
+                        }
+                    }, 20); // 打字速度
+                } else {
+                    throw new Error("模型未返回有效文本");
+                }
+
+            } catch (error) {
+                console.error("API Error:", error);
+                outputEl.innerHTML = '<span class="text-red-500">连接中断。神经污染过载，主脑拒绝响应。请稍后再试。</span>';
+            } finally {
+                // 恢复 UI 状态
+                inputEl.disabled = false;
+                btnEl.disabled = false;
+                btnEl.innerHTML = '提交评估报告 ✨';
+                alertLight.classList.remove('bg-red-500', 'animate-pulse');
+                alertLight.classList.add('bg-red-900');
+            }
+        }
+
+        document.getElementById('analyze-btn').addEventListener('click', analyzeSighting);
+
+
+        // --- 原有滚动动画监听脚本 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.15
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.fade-in-up').forEach((el) => {
+                observer.observe(el);
+            });
+
+            // 导航栏滚动效果
+            const navbar = document.getElementById('navbar');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('shadow-lg', 'shadow-eldritch-purple/10');
+                    navbar.classList.remove('bg-eldritch-900/80');
+                    navbar.classList.add('bg-[#05020a]/95');
+                } else {
+                    navbar.classList.remove('shadow-lg', 'shadow-eldritch-purple/10', 'bg-[#05020a]/95');
+                    navbar.classList.add('bg-eldritch-900/80');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
